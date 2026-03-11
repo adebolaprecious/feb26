@@ -3,7 +3,6 @@ const mongoose = require("mongoose")
 let connectionPromise = null
 
 const connectDB= async()=>{
-    
     if(mongoose.connection.readyState===1) return
 
     if (connectionPromise) return connectionPromise
@@ -17,7 +16,7 @@ const connectDB= async()=>{
     .catch((err)=>{
         connectionPromise=null;
         console.log(err);
-        throw err;
+        throw error;
         
     })
 
@@ -25,3 +24,10 @@ const connectDB= async()=>{
 }
 
 module.exports= connectDB
+
+
+
+//0 ->disconnected
+//1 ->connected
+//2->connecting
+//3 ->disconnecting

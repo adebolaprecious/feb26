@@ -1,18 +1,20 @@
 const ejs = require('ejs')
-const path = require('path')
+const path = require("path")
 
-const mailSender = async (templateName, data) => {
+
+const mailSender= async(templateName, data)=>{
     try {
-        const templatePath = path.join(__dirname, 'views', templateName);
-        const html = await ejs.renderFile(templatePath, data);
-        return html;
+        console.log(__dirname);
+        
+        const templatePath = path.join(__dirname, "/views", templateName) 
+        const file = await ejs.renderFile(templatePath, data)
+
+        return file;
     } catch (error) {
         console.error('Error rendering template:', error);
         throw error;
+        
     }
-};
-
-
-module.exports= {
-    mailSender
 }
+
+module.exports= mailSender

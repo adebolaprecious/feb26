@@ -12,4 +12,4 @@ const OTPSchema= new mongoose.Schema({
 
 const OTPModel= mongoose.model("otp", OTPSchema)
 
-module.exports = OTPModel 
+module.exports = OTPModel

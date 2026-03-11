@@ -2,18 +2,23 @@ const express = require("express");
 const app = express();
 const ejs = require('ejs')
 const mongoose = require("mongoose")
-const cors = require('cors');
+const cors = require("cors")
 app.set("view engine", 'ejs')
 const dotenv = require("dotenv");
 dotenv.config();
-app.use(express.urlencoded({extended:true}));
-app.use(express.json({limit:"50Mb"}))
+app.use(express.urlencoded({extended:true}))
+app.use(express.json({limit:"50mb"}))
 app.use(cors())
 const UserRouter = require('./routers/user.routes')
-app.use('/api/v1', UserRouter)
-const productRouter = require('./routers/product.routes')
-app.use("/api/v1", productRouter)
+const ProductRouter = require("./routers/product.routes");
 const connectDB = require("./database/conectDB");
+app.use('/api/v1', UserRouter)
+app.use("/api/v1", ProductRouter)
+
+
+
+
+
 
 // mongoose.connect(process.env.DATABASE_URI)
 // .then(()=>{
@@ -25,19 +30,8 @@ const connectDB = require("./database/conectDB");
   
 // })
 
-//user registration
-// user login
-//user can post a blog
-//user can edit their blog
-//user can delete their blog
-//user can view all blogs
-//admin can view all users
-//admin can delete any user
-//admin can edit any user
-//user can view all blogs of a particular user
-//user can like a blog
-//user can comment on a blog
-//user can view all comments on a blog
+
+
 
 // app.get(path, callback)
 const products = [
@@ -160,7 +154,9 @@ app.listen(process.env.PORT, (err) => {
   }
 });
 
+
 module.exports=async(req, res)=>{
   await connectDB()
+
   return app(req, res)
 }

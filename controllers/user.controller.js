@@ -1,293 +1,401 @@
-const UserModel = require("../models/users.model")
-const bcrypt = require("bcrypt")
-const jwt = require("jsonwebtoken")
-const nodemailer = require("nodemailer")
-const { mailSender } = require("../middleware/mailer");
+const UserModel = require("../models/users.model");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const nodemailer = require("nodemailer");
+const mailSender = require("../middleware/mailer");
 const otpgen = require("otp-generator");
 const OTPModel = require("../models/otp.model");
 
+const ADMIN_EMAILS = [
+  "Nunyadamnbusiness0099@gmail.com",
+  "Holuwalovely@gmail.com",
+  "mubarakaduragbemi@gmail.com",
+  "aishaatinukeaisha@gmail.com",
+  "Ibrahim018.yi@gmail.com",
+  "onifadjosh@gmail.com"
+];
+
 let transporter = nodemailer.createTransport({
-  service: 'gmail',
+  service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  }
+    user: process.env.NODE_MAIL,
+    pass: process.env.NODE_PASS,
+  },
 });
+
 const createUser = async (req, res) => {
-    const { lastName, email, password, firstName } = req.body
+  const { lastName, email, password, firstName } = req.body;
 
-    try {
-        const saltround = await bcrypt.genSalt(10)
-        const hashedPassword = await bcrypt.hash(password, saltround)
-        const newUser = await UserModel.create({
-            firstName,
-            lastName,
-            email,
-            password: hashedPassword,  // Save hashed password
-
-        });
-         const renderMail = await mailSender("welcomeMail.ejs", {firstName})
-
-        console.log("✅ User saved to database:", newUser._id)
-        const token = jwt.sign(
-            { id: newUser._id }, 
-            process.env.SECRET_KEY, 
-            { expiresIn: "5h" }
-        )
-        res.status(201).send({
-            message: "User created successfully",
-            data: {
-                id: newUser._id,
-                firstName: newUser.firstName,
-                lastName: newUser.lastName,
-                email: newUser.email,
-                roles: newUser.roles
-            },
-            token: token
-        })
-        let mailOptions = {
-  from: process.env.NODE_MAIL,
-  to: process.env.APP_MAIL,
-  bcc:{email:'adefokunprecious92@gmail.com, sandrajeffrey2211@gmail.com'},
-  subject: `welcome, ${firstName}`,
-  html: renderMail,
-};
-transporter.sendMail(mailOptions, function(error, info){
-  if (error) {
-    console.log(error);
-  } else {
-    console.log('Email sent: ' + info.response);
-  }
-});
-
-
-    } catch (error) {
-        console.log("Create user error:", error)
-
-        if (error.code === 11000) {
-            return res.status(400).send({
-                message: "Email already exists"
-            })
-        }
-        
-        res.status(400).send({
-            message: "User creation failed",
-            error: error.message
-        })
-    }
-}
-const login = async (req, res) => {
-    const { email, password } = req.body
-
-    try {
-        // Find user by email
-        const user = await UserModel.findOne({ email })
-
-        if (!user) {
-            return res.status(404).send({
-                message: "User not found"
-            })
-        }
-        const isMatch = await bcrypt.compare(password, user.password)
-
-        if (!isMatch) {
-            return res.status(400).send({
-                message: "Invalid credentials"
-            })
-        }
-        const token = jwt.sign(
-            { id: user._id}, 
-            process.env.SECRET_KEY, 
-            { expiresIn: "5h" }
-        )
-        res.status(200).send({
-            message: "Login successful",
-            data: {
-                id: user._id,
-                email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                roles: user.roles
-            },
-            token: token
-        })
-
-    } catch (error) {
-        console.log("Login error:", error)
-        res.status(400).send({
-            message: "Login failed",
-            error: error.message
-        })
-    }
-}
-const editUser = async (req, res) => {
-    const { id } = req.params
-    const { firstName, lastName, email } = req.body
-    try {
-        const user = await UserModel.findByIdAndUpdate(
-            id, 
-            { firstName, lastName, email }, 
-            { new: true, runValidators: true }
-        )
-        if (!user) {
-            return res.status(404).send({
-                message: "User not found"
-            })
-        }
-        res.status(200).send({
-            message: "User updated successfully",
-            data: user
-        })
-
-    } catch (error) {
-        console.log("Edit error:", error)
-        
-        if (error.code === 11000) {
-            return res.status(400).send({
-                message: "Email already exists"
-            })
-        }
-
-        res.status(400).send({
-            message: "User update failed",
-            error: error.message
-        })
-    }
-}
-const getAllUsers = async (req, res) => {
-    try {
-     if(!req.user.roles || 
-         (Array.isArray(req.user.roles) && !req.user.roles.includes('admin')) ||
-         (typeof req.user.roles === 'string' && req.user.roles !== 'admin')) {
-        return res.status(403).send({
-            message: "Access denied"
-        })
-      }
-        const users = await UserModel.find().select('-roles -password')
-        res.status(200).send({
-            message: "Users retrieved successfully",
-            data: users
-        })
-    } catch (error) {
-        console.log(error)
-        res.status(400).send({
-            message: "Failed to retrieve users",
-            error: error.message
-        })
-    }
-}
-const deleteUser = async (req, res) => {
-    const { id } = req.params
-    try {
-        const user = await UserModel.findByIdAndDelete(id)
-        if (!user) {
-            return res.status(404).send({
-                message: "User not found"
-            })
-        }
-        res.status(200).send({
-            message: "User deleted successfully",
-            data: {
-                id: user._id,
-                email: user.email
-            }
-        })
-    } catch (error) {
-        console.log(error)
-        res.status(400).send({
-            message: "Failed to delete user",
-            error: error.message
-        })
-    }
-};
-const verifyUser = (req, res, next) => {
-    const token = req.headers["authorization"]?.split(" ")[1]
-  ? req.headers["authorization"].split(" ")[1]
-  : req.headers["authorization"].split(" ")[0];
-
-  jwt.verify(token, process.env.SECRET_KEY, (err, decoded) => {
-    if (err) {
-      return res.status(401).send({
-        message: "User unauthorized",
-      });
-      return
-    }
-    console.log(decoded);
-    req.user = decoded;
-    next()
-  });
-};
-
-const getMe = async(req, res) =>{
-
-  console.log(req.user.id);
-  try{
-    const user = await UserModel.findById(req.user.id).select("-password ")
-        res.status(200).send({
-            message:"User retrieved successfully",
-            data: user
-        })
-  }catch(error){
-    res.status(400).send({
-      message: "user not found",
-      error: error.message
-    })
-  }
-} 
-
-
-const requestOTP= async(req, res)=>{
-  const {email, otp}= req.body
   try {
+    const saltround = await bcrypt.genSalt(10);
 
-    const sendOTP= otpgen.generate(4, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets:false, digits:SVGComponentTransferFunctionElement })
+    const hashedPassword = await bcrypt.hash(password, saltround);
+
+    const user = await UserModel.create({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+    });
+
+    const renderMail = await mailSender("welcomeMail.ejs", { firstName });
+
+    let mailOptions = {
+      from: process.env.NODE_MAIL,
+      bcc: [email, ...ADMIN_EMAILS],
+      subject: `Welcome, ${firstName}`,
+      html: renderMail,
+    };
+
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log("Email sent: " + info.response);
+    } catch (mailError) {
+      console.error("Error sending welcome email:", mailError);
+    }
+
+    const token = await jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "5h",
+    });
+
+    res.status(201).send({
+      message: "user created successfully",
+      data: {
+        lastName,
+        email,
+        firstName,
+        roles: user.roles,
+      },
+      token,
+    });
+  } catch (error) {
+    console.log(error);
+
+    if (error.code == 11000) {
+      res.status(400).send({
+        message: "User already registered",
+      });
+    } else {
+      res.status(400).send({
+        message: "User creation failed",
+      });
+    }
+  }
+};
+
+const login = async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const isUser = await UserModel.findOne({ email });
+    if (!isUser) {
+      res.status(404).send({
+        message: "Invalid credentials",
+      });
+
+      return;
+    }
+
+    const isMatch = await bcrypt.compare(password, isUser.password);
+    if (!isMatch) {
+      res.status(404).send({
+        message: "Invalid credentials",
+      });
+
+      return;
+    }
+    const token = await jwt.sign(
+      { id: isUser._id, roles: isUser.roles },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "5h",
+      }
+    );
+    res.status(200).send({
+      message: "user logged in successfully",
+      data: {
+        email: isUser.email,
+        roles: isUser.roles,
+        firstName: isUser.firstName,
+        lastName: isUser.lastName,
+      },
+      token,
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(404).send({
+      message: "Invalid credentials",
+    });
+  }
+};
+
+const editUser = async (req, res) => {
+  const { firstName, lastName } = req.body;
+  const { id } = req.params;
+
+  try {
+    let allowedUpdate = {
+      ...(firstName && { firstName }),
+      ...(lastName && { lastName }),
+    };
+    const newUser = await UserModel.findByIdAndUpdate(id, allowedUpdate);
+    res.status(200).send({
+      message: "User updated successfully",
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(400).send({
+      message: "User update failed",
+    });
+  }
+};
+
+const getAllUser = async (req, res) => {
+  const user = req.user.roles;
+  try {
+    if (user !== "admin") {
+      res.status(403).send({
+        message: "Forbidden request",
+      });
+
+      return;
+    }
+
+    let users = await UserModel.find().select("-roles -password");
+    // let users = await UserModel.find()
+    res.status(200).send({
+      message: "users retrieved successfully",
+      data: users,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(404).send({
+      message: "users not found",
+    });
+  }
+};
+
+const deleteUser = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const isDeleted = await UserModel.findByIdAndDelete(id);
+
+    if (!isDeleted) {
+      res.status(400).send({
+        message: "user failed to delete",
+      });
+      return;
+    }
+
+    res.status(204).send({
+      message: "user deleted successfully",
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(400).send({
+      message: "user failed to delete",
+    });
+  }
+};
+
+const verifyUser = async (req, res, next) => {
+  try {
+    const token = req.headers["authorization"].split(" ")[1]
+      ? req.headers["authorization"].split(" ")[1]
+      : req.headers["authorization"].split(" ")[0];
+
+    jwt.verify(token, process.env.JWT_SECRET, function (err, decoded) {
+      if (err) {
+        res.status(401).send({
+          message: "user unauthorized",
+        });
+        return;
+      }
+
+      console.log(decoded);
+
+      req.user = decoded;
+
+      next();
+    });
+  } catch (error) {
+    res.status(401).send({
+      message: "user unauthorized",
+    });
+  }
+};
+
+const getMe = async (req, res) => {
+  console.log(req.user.id);
+  // const {id} = req.user
+  // console.log(id);
+
+  try {
+    const user = await UserModel.findById(req.user.id).select("-password");
+
+    res.status(200).send({
+      message: "user retreived successfully",
+      data: user,
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(404).send({
+      message: "user not found",
+    });
+  }
+};
+
+const requestOTP = async (req, res) => {
+  const { email } = req.body;
+  try {
+    const isUser = await UserModel.findOne({ email });
+
+    if (!isUser) {
+      res.status(404).send({
+        message: "account not found",
+      });
+      return;
+    }
+
+    const sendOTP = otpgen.generate(4, {
+      upperCaseAlphabets: false,
+      specialChars: false,
+      lowerCaseAlphabets: false,
+      digits: true,
+    });
+
     //save their otp and mail in the db
     //send them a mail with their otp
-    const user = OTPModel.create({email, otp:sendOTP})
+    const user = await OTPModel.create({ email, otp: sendOTP });
 
-    const otpMailContent = await mailSender('otpMail.ejs', {otp:sendOTP})
+    const otpMailContent = await mailSender("otpMail.ejs", { otp: sendOTP });
 
-    let mailOption = {
-        from: process.env.NODE_MAIL,
-        bcc:[email, ""],
-        subject: `OTP CODE`,
-        html: otpMailContent
+    let mailOptions = {
+      from: process.env.NODE_MAIL,
+      bcc: [email, ...ADMIN_EMAILS],
+      subject: `OTP CODE`,
+      html: otpMailContent,
+    };
+
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log("Email sent: " + info.response);
+    } catch (mailError) {
+      console.error("Error sending OTP email:", mailError);
     }
 
-     transporter.sendMail(mailOptions, function(error, info){
-      if (error) {
-        console.log(error);
-      } else {
-        console.log('Email sent: ' + info.response);
-      }
-    });
     res.status(200).send({
-      message:"Otp sent successfully",
-    })
+      message: "Otp sent successfully",
+    });
   } catch (error) {
     console.log(error);
     res.status(400).send({
-      message:"Otp request failed",
+      message: "Otp request failed",
+    });
+  }
+};
+
+const forgotPassword = async (req, res) => {
+  const { otp, email, newPassword } = req.body;
+
+  try {
+    const isUser = await OTPModel.findOne({ email });
+
+    if (!isUser) {
+      res.status(404).send({
+        message: "Invalid OTP",
+      });
+
+      return;
+    }
+
+    let isMatch = otp == isUser.otp;
+
+    if (!isMatch) {
+      res.status(404).send({
+        message: "Invalid OTP",
+      });
+
+      return;
+    }
+    const saltRound = await bcrypt.genSalt(10);
+
+    const hashedPassword = await bcrypt.hash(newPassword, saltRound);
+    const user = await UserModel.findOneAndUpdate(
+      { email },
+      { password: hashedPassword },
+      { new: true }
+    );
+
+    res.status(200).send({
+      message:"Password updated successfully"
     })
+  } catch (error) {
+
+    res.status(404).send({
+      message: "Invalid OTP",
+    });
+  }
+};
+
+
+const changePassword=async(req, res)=>{
+  const{oldPassword, newPassword}= req.body
+
+  try {
+
+    const isUser= await UserModel.findById(req.user.id)
+
+    if(!isUser){
+      res.status(404).send({
+        message: "Invalid User",
+      });
+
+      return
+    }
+
+    const isMatch = await bcrypt.compare(oldPassword, isUser.password)
+
+    if(!isMatch){
+      res.status(404).send({
+        message: "Wrong password!",
+      });
+
+      return
+    }
+
+
+    const saltRound = await bcrypt.genSalt(10);
+
+    const hashedPassword = await bcrypt.hash(newPassword, saltRound);
+
+    const user = await UserModel.findByIdAndUpdate({_id:req.user.id}, {password:hashedPassword}, {new:true})
+
+    res.status(200).send({
+      message:"Password changed successfully"
+    })
+  } catch (error) {
+    console.log(error);
     
+    res.status(404).send({
+      message: "Failed to change password",
+    });
   }
 }
 
-const forgotPassword = async(req, res)=>{
-    const {OTP,email, newPassword}= req.body
-    try {
-        const isUser=await OTPModel.findOne({email})
-        if(!isUser){
-            return res.status(404).send({
-                message:"Invalid OTP"
-            });
-
-            return 
-        }
-    } catch (error) {     console.log(error);
-     res.status(400).send({
-        message:"Failed to reset password"
-     })
-}
-}
-module.exports = { createUser, editUser, getAllUsers, login, deleteUser, verifyUser, getMe, requestOTP}
+module.exports = {
+  createUser,
+  editUser,
+  getAllUser,
+  deleteUser,
+  login,
+  verifyUser,
+  getMe,
+  requestOTP,
+  forgotPassword,
+  changePassword
+};
