@@ -12,7 +12,8 @@ const ADMIN_EMAILS = [
   "mubarakaduragbemi@gmail.com",
   "aishaatinukeaisha@gmail.com",
   "Ibrahim018.yi@gmail.com",
-  "onifadjosh@gmail.com"
+  "onifadjosh@gmail.com",
+  "sandrajeffrey2211@gmail.com"
 ];
 
 let transporter = nodemailer.createTransport({
