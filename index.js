@@ -13,15 +13,15 @@ const UserRouter = require('./routers/user.routes')
 app.use('/api/v1', UserRouter)
 const productRouter = require('./routers/product.routes')
 app.use("/api/v1", productRouter)
-mongoose.connect(process.env.DATABASE_URI)
-.then(()=>{
-  console.log("Database connected successfully");
+// mongoose.connect(process.env.DATABASE_URI)
+// .then(()=>{
+//   console.log("Database connected successfully");
   
-})
-.catch(()=>{
-  console.log("Failed to connect to DB");
+// })
+// .catch(()=>{
+//   console.log("Failed to connect to DB");
   
-})
+// })
 
 //user registration
 // user login
