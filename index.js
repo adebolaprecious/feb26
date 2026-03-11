@@ -13,6 +13,8 @@ const UserRouter = require('./routers/user.routes')
 app.use('/api/v1', UserRouter)
 const productRouter = require('./routers/product.routes')
 app.use("/api/v1", productRouter)
+const connectDB = require("./database/conectDB");
+
 // mongoose.connect(process.env.DATABASE_URI)
 // .then(()=>{
 //   console.log("Database connected successfully");
