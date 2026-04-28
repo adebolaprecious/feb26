@@ -2,101 +2,14 @@ const express = require("express");
 const app = express();
 const ejs = require('ejs')
 const mongoose = require("mongoose")
-const cors = require("cors")
-app.set("view engine", 'ejs')
-const dotenv = require("dotenv");
-dotenv.config();
-app.use(express.urlencoded({extended:true}))
-app.use(express.json({limit:"50mb"}))
-app.use(cors())
-const UserRouter = require('./routers/user.routes')
-const ProductRouter = require("./routers/product.routes");
-const connectDB = require("./database/connectDB");
-app.use('/api/v1', UserRouter)
-app.use("/api/v1", ProductRouter)
+app.set('view engine', 'ejs');
+dotenv = require('dotenv').config()
+app.use(express.urlencoded({extended: true}))
 
-
-
-
-
-
-// mongoose.connect(process.env.DATABASE_URI)
-// .then(()=>{
-//   console.log("Database connected successfully");
-  
-// })
-// .catch(()=>{
-//   console.log("Failed to connect to DB");
-  
-// })
-
-
-
-
-// app.get(path, callback)
-const products = [
-  {
-    prodName: "charger",
-    prodPrice: 20,
-    prodQuantity: 15,
-    prodDescription: "Fast charging USB-C wall charger",
-  },
-  {
-    prodName: "wireless earbuds",
-    prodPrice: 89.99,
-    prodQuantity: 42,
-    prodDescription: "Noise-cancelling Bluetooth earbuds with charging case",
-  },
-  {
-    prodName: "laptop stand",
-    prodPrice: 34.5,
-    prodQuantity: 28,
-    prodDescription: "Adjustable aluminum laptop stand for ergonomic setup",
-  },
-  {
-    prodName: "mechanical keyboard",
-    prodPrice: 119.99,
-    prodQuantity: 17,
-    prodDescription: "RGB mechanical keyboard with Cherry MX switches",
-  },
-  {
-    prodName: "smart watch",
-    prodPrice: 249.99,
-    prodQuantity: 8,
-    prodDescription: "Fitness tracker with heart rate monitor and GPS",
-  },
-  {
-    prodName: "webcam",
-    prodPrice: 75.25,
-    prodQuantity: 56,
-    prodDescription: "1080p HD webcam with built-in microphone",
-  },
-  {
-    prodName: "power bank",
-    prodPrice: 45.99,
-    prodQuantity: 33,
-    prodDescription: "20000mAh portable power bank with multiple ports",
-  },
-  {
-    prodName: "desk lamp",
-    prodPrice: 29.99,
-    prodQuantity: 21,
-    prodDescription:
-      "LED desk lamp with adjustable brightness and color temperature",
-  },
-  {
-    prodName: "external SSD",
-    prodPrice: 129.99,
-    prodQuantity: 12,
-    prodDescription: "1TB USB 3.2 external solid state drive",
-  },
-  {
-    prodName: "gaming mouse",
-    prodPrice: 59.95,
-    prodQuantity: 39,
-    prodDescription: "Programmable gaming mouse with RGB lighting",
-  },
-];
+app.use(express.json())
+app.use(express.static("public"))
+const userRoute = require("./routers/user.route")
+app.use("/api/v1", userRoute)
 app.get("/", (req, res) => {
   // res.send(true)
   // res.send(['pampam', 'nony', ])
@@ -106,57 +19,88 @@ app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
 });
 
-app.get('/index', (req, res)=>{
-  res.render('index', {products})
-})
+app.get('/ejs', (req, res)=>{
+  res.render("index", { gender, arrPerson, prodArr });
 
-app.get('/addProduct', (req, res)=>{
-  res.render("addProduct")
-})
 
-app.post("/addProduct", (req, res)=>{
-    console.log(req.body)
-    const{prodName, prodPrice, prodQuantity, prodDescription} = req.body
+let arrPerson = [{
+  firstName: "ade",
+   lastName: "tope",
+   email: "adefokun@gmail.com",
+   course: "software"}]
 
-    products.push(req.body)
-    res.render("index", {products})
-})
 
-app.post("/deleteProd/:id", (req, res)=>{
-  console.log(req.params);
-  const {id}= req.params
-  products.splice(id,1)
-  res.render("index", {products})
+// let arrPerson = [person, person, person]
+
+let gender = 'male';
+
+let prodArr = [
+  {
+    prodName: "charger",
+    prodPrice: 20,
+    prodDescription: "Fast charging USB-C wall charger",
+  },
+  {
+    prodName: "wireless earbuds",
+    prodPrice: 89.99,
+    prodDescription: "Noise-cancelling Bluetooth earbuds with charging case",
+  },
+  {
+    prodName: "laptop stand",
+    prodPrice: 34.5,
+    prodDescription: "Adjustable aluminum laptop stand for ergonomic setup",
+  },
+  {
+    prodName: "mechanical keyboard",
+    prodPrice: 119.99,
+    prodDescription: "RGB mechanical keyboard with Cherry MX switches",
+  },
+  {
+    prodName: "smart watch",
+    prodPrice: 249.99,
+    prodDescription: "Fitness tracker with heart rate monitor and GPS",
+  },
+];
+});
+app.get("/products", (req, res) => {
+  res.render("products", { prodArr });
+});
+app.post("/delete/:id",(req, res)=>{
   
-  
+  console.log(req.params.id)
+  res.render(index, {gender, arrPerson} )
+});
+app.get("/addUser",(req, res)=>{
+  res.render('addUser')
 })
 
-app.get("/editProd/:id", (req, res)=>{
-  res.render("editProduct")
+app.post("/addUser",(req, res)=>{
+  let arrPerson = [];
+  // let gender = "male"
+  console.log(req.body)
+  const {firstName, lastName, email, course} = req.body
+    arrPerson.push(req.body)
+    res.render("index", {arrPerson: arrPerson})
 })
 
-app.post("/editProd/:id", (req, res)=>{
-  const {id}= req.params//collect the id for index.ejs and pass the params here
-  const{prodName, prodPrice, prodQuantity, prodDescription} = req.body //since we are editing, we need a req body for want we want to change/replace
-  products.splice(id, 1, req.body)//the normal array method to remove and replace
-  res.render("index", {products})//after editing, we now display the new products
+//object document 
+app.get("/editUser:id", (req, res)=>{
+  const {id} = req.params
+   const {firstName, lastName, email, course} = req.body
+   arrPerson.splice(id, 1,req.body)
+   res.render(index, {gender, arrPerson})
 })
-
-
-
-
-// app.listen(port, callback)
-app.listen(process.env.PORT, (err) => {
-  if (err) {
-    console.log("error starting server", err);
-  } else {
-    console.log(`server started successfully`);
-  }
+const URI = process.env.MONGODB_URI;
+mongoose.connect(URI);
+mongoose.connection.on("connected", () => {
+  console.log("database connected successfully");
+});
+mongoose.connection.on("error", (err) => {
+  console.log("cannot connect to database", err);
 });
 
+const PORT = process.env.PORT || 5000;
 
-module.exports=async(req, res)=>{
-  await connectDB()
-
-  return app(req, res)
-}
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});

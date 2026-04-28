@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+<div class="card" style="width: 18rem;">
+  <div class="card-body">
+    <h5 class="card-title"><%= product.prodName %></h5>
+    <p class="card-text">$<%= product.prodPrice %></p>
+    <p class="card-text"><%= product.prodDescription %></p>
+  <button class="btn btn-primary">edit</button>
+  <form action="/delete/<%= idx %>"></form>
+  <button class="btn btn-danger">delete</button>
+  </div>
+</div>
+</body>
+</html>
